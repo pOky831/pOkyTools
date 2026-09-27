@@ -158,20 +158,69 @@ function Discord-Bot-Boom {
     Write-Host ""
     Write-Host "  Achtung: Sendet 100 Nachrichten!" -ForegroundColor Yellow
     Write-Host ""
-    
+
     $star = Show-AnimatedStar
     Write-Host -NoNewline "  $star Bot Token: " -ForegroundColor Yellow
     $token = Read-Host
-    
+
+    Write-Host ""
+    Write-Host "  Ziel waehlen:" -ForegroundColor Yellow
+    Write-Host "  [1] Channel ID" -ForegroundColor White
+    Write-Host "  [2] User ID (DM)" -ForegroundColor White
+    Write-Host ""
     $star = Show-AnimatedStar
-    Write-Host -NoNewline "  $star Channel ID: " -ForegroundColor Yellow
-    $channelId = Read-Host
-    
+    Write-Host -NoNewline "  $star Auswahl: " -ForegroundColor Yellow
+    $choice = Read-Host
+
+    $targetType = ""
+    if($choice -eq "1") {
+        $targetType = "Channel"
+        $star = Show-AnimatedStar
+        Write-Host -NoNewline "  $star Channel ID: " -ForegroundColor Yellow
+        $targetId = Read-Host
+    }
+    elseif($choice -eq "2") {
+        $targetType = "User (DM)"
+        $star = Show-AnimatedStar
+        Write-Host -NoNewline "  $star User ID: " -ForegroundColor Yellow
+        $userId = Read-Host
+
+        # DM Channel erstellen
+        Write-Host ""
+        Write-Host "  Erstelle DM Channel..." -ForegroundColor Yellow
+        $dmUrl = "https://discord.com/api/v10/users/@me/channels"
+        $dmHeaders = @{
+            "Authorization" = "Bot $token"
+            "Content-Type" = "application/json"
+        }
+        $dmBody = @{ recipient_id = $userId } | ConvertTo-Json
+
+        try {
+            $dmResponse = Invoke-RestMethod -Uri $dmUrl -Method Post -Headers $dmHeaders -Body $dmBody -ErrorAction Stop
+            $targetId = $dmResponse.id
+            Write-Host "  DM Channel ID: $targetId" -ForegroundColor Green
+        }
+        catch {
+            Write-Host ""
+            Write-Host "  Fehler beim Erstellen des DM Channels: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host ""
+            Read-Host "  Druecke Enter"
+            return
+        }
+    }
+    else {
+        Write-Host ""
+        Write-Host "  Ungueltige Auswahl!" -ForegroundColor Red
+        Write-Host ""
+        Read-Host "  Druecke Enter"
+        return
+    }
+
     $star = Show-AnimatedStar
     Write-Host -NoNewline "  $star Wort: " -ForegroundColor Yellow
     $word = Read-Host
-    
-    if([string]::IsNullOrWhiteSpace($token) -or [string]::IsNullOrWhiteSpace($channelId) -or [string]::IsNullOrWhiteSpace($word)) {
+
+    if([string]::IsNullOrWhiteSpace($token) -or [string]::IsNullOrWhiteSpace($targetId) -or [string]::IsNullOrWhiteSpace($word)) {
         Write-Host ""
         Write-Host "  Fehler: Alle Felder muessen ausgefuellt sein!" -ForegroundColor Red
         Write-Host ""
@@ -184,7 +233,8 @@ function Discord-Bot-Boom {
     Write-Host ""
     Write-Host "  Konfiguration:" -ForegroundColor Yellow
     Write-Host "  ==============================" -ForegroundColor Yellow
-    Write-Host "  Channel ID: $channelId" -ForegroundColor White
+    Write-Host "  Ziel: $targetType" -ForegroundColor White
+    Write-Host "  ID: $targetId" -ForegroundColor White
     Write-Host "  Wort: $word" -ForegroundColor White
     Write-Host "  Anzahl: 100 Nachrichten" -ForegroundColor White
     Write-Host ""
@@ -194,14 +244,14 @@ function Discord-Bot-Boom {
     Write-Host "  =========================" -ForegroundColor Red
     Write-Host ""
     Read-Host "  Druecke Enter um zu starten"
-    
+
     Clear-Host
     Show-Header
     Write-Host ""
     Write-Host "  BOOM STARTET!" -ForegroundColor Red
     Write-Host ""
-    
-    $apiUrl = "https://discord.com/api/v10/channels/$channelId/messages"
+
+    $apiUrl = "https://discord.com/api/v10/channels/$targetId/messages"
     $headers = @{
         "Authorization" = "Bot $token"
         "Content-Type" = "application/json"
