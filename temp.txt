@@ -1,0 +1,219 @@
+# pOkyTools 3.0 - Schwarz-Orange Edition
+
+$starFrames = @("*", "+", "x", "*", "+", "x")
+$starIndex = 0
+
+$ghostLines = @(
+    "              ghost",
+    "          .-ghostface"
+)
+
+$devilLines = @(
+    "            devil",
+    "          /~  devil  ~\"
+)
+
+$alienLines = @(
+    "    alien",
+    "   .-./ _=_ \.-."
+)
+
+$asciiArts = @(
+    @{ name = "ghost"; lines = $ghostLines },
+    @{ name = "devil"; lines = $devilLines },
+    @{ name = "alien"; lines = $alienLines }
+)
+
+$currentArt = $asciiArts | Get-Random
+
+function Show-AnimatedStar {
+    $script:starIndex = ($script:starIndex + 1) % $starFrames.Length
+    return $starFrames[$script:starIndex]
+}
+
+function Show-Header {
+    Clear-Host
+    Write-Host ""
+    Write-Host "  pOkyTools 3.0" -ForegroundColor DarkYellow
+    Write-Host "  ==============================" -ForegroundColor DarkYellow
+    Write-Host ""
+}
+
+function Show-Menu {
+    Show-Header
+    Write-Host "  [1] Discord Bot" -ForegroundColor DarkYellow
+    Write-Host "  [2] Boom Bot" -ForegroundColor DarkYellow
+    Write-Host "  [0] Exit" -ForegroundColor DarkYellow
+    Write-Host ""
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Waehle: " -ForegroundColor DarkYellow
+}
+
+function Discord-Bot {
+    Clear-Host
+    Show-Header
+    Write-Host "  Discord Bot Texter" -ForegroundColor DarkYellow
+    Write-Host "  ==============================" -ForegroundColor DarkYellow
+    Write-Host ""
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Bot Token: " -ForegroundColor DarkYellow
+    $token = Read-Host
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Channel ID: " -ForegroundColor DarkYellow
+    $target = Read-Host
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Nachricht: " -ForegroundColor DarkYellow
+    $message = Read-Host
+    
+    if([string]::IsNullOrWhiteSpace($token) -or [string]::IsNullOrWhiteSpace($target) -or [string]::IsNullOrWhiteSpace($message)) {
+        Write-Host ""
+        Write-Host "  Fehler: Alle Felder muessen ausgefuellt sein!" -ForegroundColor Red
+        Write-Host ""
+        Read-Host "  Druecke Enter"
+        return
+    }
+    
+    Write-Host ""
+    Write-Host "  Senden zu: $target" -ForegroundColor DarkYellow
+    Write-Host "  Nachricht: $message" -ForegroundColor DarkYellow
+    Write-Host ""
+    
+    $apiUrl = "https://discord.com/api/v10/channels/$target/messages"
+    $headers = @{
+        "Authorization" = "Bot $token"
+        "Content-Type" = "application/json"
+    }
+    
+    try {
+        $body = @{ content = $message } | ConvertTo-Json
+        $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $body -ErrorAction Stop
+        Write-Host "  Erfolgreich gesendet!" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  Fehler: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    Write-Host ""
+    Read-Host "  Druecke Enter"
+}
+
+function Discord-Bot-Boom {
+    Clear-Host
+    Show-Header
+    Write-Host "  Discord Boom Bot" -ForegroundColor DarkYellow
+    Write-Host "  ==============================" -ForegroundColor DarkYellow
+    Write-Host ""
+    Write-Host "  Achtung: Sendet 100 Nachrichten!" -ForegroundColor Yellow
+    Write-Host ""
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Bot Token: " -ForegroundColor DarkYellow
+    $token = Read-Host
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Channel ID: " -ForegroundColor DarkYellow
+    $channelId = Read-Host
+    
+    $star = Show-AnimatedStar
+    Write-Host -NoNewline "  $star Wort: " -ForegroundColor DarkYellow
+    $word = Read-Host
+    
+    if([string]::IsNullOrWhiteSpace($token) -or [string]::IsNullOrWhiteSpace($channelId) -or [string]::IsNullOrWhiteSpace($word)) {
+        Write-Host ""
+        Write-Host "  Fehler: Alle Felder muessen ausgefuellt sein!" -ForegroundColor Red
+        Write-Host ""
+        Read-Host "  Druecke Enter"
+        return
+    }
+    
+    Clear-Host
+    Show-Header
+    Write-Host ""
+    Write-Host "  Konfiguration:" -ForegroundColor DarkYellow
+    Write-Host "  ==============================" -ForegroundColor DarkYellow
+    Write-Host "  Channel ID: $channelId" -ForegroundColor White
+    Write-Host "  Wort: $word" -ForegroundColor White
+    Write-Host "  Anzahl: 100 Nachrichten" -ForegroundColor White
+    Write-Host ""
+    Write-Host ""
+    Write-Host "  =========================" -ForegroundColor Red
+    Write-Host "  START BOOM!" -ForegroundColor Red
+    Write-Host "  =========================" -ForegroundColor Red
+    Write-Host ""
+    Read-Host "  Druecke Enter um zu starten"
+    
+    Clear-Host
+    Show-Header
+    Write-Host ""
+    Write-Host "  BOOM STARTET!" -ForegroundColor Red
+    Write-Host ""
+    
+    $apiUrl = "https://discord.com/api/v10/channels/$channelId/messages"
+    $headers = @{
+        "Authorization" = "Bot $token"
+        "Content-Type" = "application/json"
+    }
+    
+    $successCount = 0
+    $errorCount = 0
+    
+    for($i = 1; $i -le 100; $i++) {
+        try {
+            $body = @{ content = $word } | ConvertTo-Json
+            $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $body -ErrorAction Stop
+            $successCount++
+            
+            $progress = [math]::Round(($i / 100) * 100)
+            Write-Host "`r  [$i/100] Progress: $progress%" -NoNewline -ForegroundColor DarkYellow
+            
+            Start-Sleep -Milliseconds 650
+        }
+        catch {
+            $errorCount++
+            Write-Host ""
+            Write-Host "  Fehler bei Nachricht $i" -ForegroundColor Red
+            
+            if($_.Exception.Message -match "401" -or $_.Exception.Message -match "Unauthorized") {
+                Write-Host ""
+                Write-Host "  Ungültiger Bot Token! Abbruch..." -ForegroundColor Red
+                break
+            }
+            
+            if($_.Exception.Message -match "429" -or $_.Exception.Message -match "rate limit") {
+                Write-Host "  Rate Limit erreicht, warte 5 Sekunden..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 5
+            }
+        }
+    }
+    
+    Write-Host ""
+    Write-Host ""
+    Write-Host "  Fertig!" -ForegroundColor Green
+    Write-Host "  Erfolgreich: $successCount" -ForegroundColor Green
+    if($errorCount -gt 0) {
+        Write-Host "  Fehler: $errorCount" -ForegroundColor Red
+    }
+    Write-Host ""
+    Read-Host "  Druecke Enter"
+}
+
+$running = $true
+while($running) {
+    Show-Menu
+    $choice = Read-Host
+
+    switch($choice) {
+        "1" { Discord-Bot }
+        "2" { Discord-Bot-Boom }
+        "0" { $running = $false }
+    }
+}
+
+Clear-Host
+Write-Host ""
+Write-Host "  Auf Wiedersehen!" -ForegroundColor DarkYellow
+Write-Host ""
+Start-Sleep -Milliseconds 1000
